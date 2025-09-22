@@ -31,10 +31,6 @@ class FlashcardApp:
     self.next_word()
   
   def next_word(self):
-    if not self.words_to_learn:
-      self.ui.show_completion()
-      return
-    
     word = random.choice(self.words_to_learn)
     self.ui.show_word(word)
   
