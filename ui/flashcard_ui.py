@@ -25,13 +25,15 @@ class FlashcardUI:
     self.card_word = self.canvas.create_text(400, 263, text="", font=("Arial", 60, "bold"))
     self.canvas.grid(row=0, column=0, columnspan=2)
     
+    # Store button images as instance variables to prevent garbage collection
+    self.check_image = PhotoImage(file="images/right.png")
+    self.cross_image = PhotoImage(file="images/wrong.png")
+    
     # Buttons
-    check_image = PhotoImage(file="images/right.png")
-    self.known_button = Button(image=check_image, highlightthickness=0, command=self.on_known)
+    self.known_button = Button(image=self.check_image, highlightthickness=0, command=self.on_known)
     self.known_button.grid(row=1, column=0)
     
-    cross_image = PhotoImage(file="images/wrong.png")
-    self.unknown_button = Button(image=cross_image, highlightthickness=0, command=self.on_unknown)
+    self.unknown_button = Button(image=self.cross_image, highlightthickness=0, command=self.on_unknown)
     self.unknown_button.grid(row=1, column=1)
   
   def show_word(self, word: Word):
@@ -50,13 +52,6 @@ class FlashcardUI:
       self.canvas.itemconfig(self.card_title, text="English", fill="white")
       self.canvas.itemconfig(self.card_word, text=self.current_word.english, fill="white")
       self.canvas.itemconfig(self.card_background, image=self.card_back_img)
-
-  def show_completion(self):
-    if self.flip_timer:
-      self.window.after_cancel(self.flip_timer)
-    self.canvas.itemconfig(self.card_title, text="Done!", fill="black")
-    self.canvas.itemconfig(self.card_word, text="You learned all words 🎉", fill="black")
-    self.canvas.itemconfig(self.card_background, image=self.card_front_img)
   
   def run(self):
     self.window.mainloop()

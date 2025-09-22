@@ -1,6 +1,5 @@
 from google import genai
-import random
-import os
+from typing import Optional
 from models.word import Word, WordManager
 from config.settings import config
 
@@ -10,8 +9,7 @@ class AIService:
     self.word_manager = WordManager()
   
   def should_generate_sentence(self) -> bool:
-    learned = self.word_manager.get_learned_words()
-    return len(learned) % config.SENTENCE_GENERATION_INTERVAL == 0 and len(learned) > 0
+    return True
   
   def generate_sentence(self) -> Optional[Word]:
     words = self.word_manager.get_learned_words()

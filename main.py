@@ -9,7 +9,7 @@ class FlashcardApp:
     self.word_manager = WordManager()
     self.ai_service = AIService()
     self.words_to_learn = self.word_manager.load_words_to_learn()
-    self.ui = FlashcardUI(self.mark_as_known, self.next_word)
+    self.ui = FlashcardUI(self.mark_as_known, self.mark_as_unknown)
   
   def mark_as_known(self):
     if not self.ui.current_word:
@@ -24,6 +24,10 @@ class FlashcardApp:
       if sentence_word:
         print(f"Generated: {sentence_word.finnish} -> {sentence_word.english}")
     
+    self.next_word()
+    
+  def mark_as_unknown(self):
+    """When wrong button is pressed - just go to next word without learning"""
     self.next_word()
   
   def next_word(self):
