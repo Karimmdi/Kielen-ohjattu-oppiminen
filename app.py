@@ -7,62 +7,62 @@ BACKGROUND_COLOR = "#B1DDC6"
 
 
 if os.path.exists("languages/words_to_learn.csv"):
-    df = pd.read_csv("languages/words_to_learn.csv")
+  df = pd.read_csv("languages/words_to_learn.csv")
 else:
-    df = pd.read_csv("languages/fi-en-words.csv")
+  df = pd.read_csv("languages/fi-en-words.csv")
 
 to_learn = df.to_dict(orient="records")
 current_word = {}
 
 
 def mark_as_known():
-    """Move current_word to learned_words.csv and update words_to_learn.csv."""
-    global to_learn, current_word
+  """Move current_word to learned_words.csv and update words_to_learn.csv."""
+  global to_learn, current_word
 
-    if not current_word:
-        return
+  if not current_word:
+    return
 
-    # remove from to_learn
-    to_learn = [w for w in to_learn if w != current_word]
-    pd.DataFrame(to_learn).to_csv("languages/words_to_learn.csv", index=False)
+  # remove from to_learn
+  to_learn = [w for w in to_learn if w != current_word]
+  pd.DataFrame(to_learn).to_csv("languages/words_to_learn.csv", index=False)
 
-    # append to learned_words.csv
-    learned_file = "languages/learned_words.csv"
-    df_new = pd.DataFrame([current_word])
-    if os.path.exists(learned_file):
-        df_new.to_csv(learned_file, mode="a", header=False, index=False)
-    else:
-        df_new.to_csv(learned_file, index=False)
+  # append to learned_words.csv
+  learned_file = "languages/learned_words.csv"
+  df_new = pd.DataFrame([current_word])
+  if os.path.exists(learned_file):
+    df_new.to_csv(learned_file, mode="a", header=False, index=False)
+  else:
+    df_new.to_csv(learned_file, index=False)
 
-    print(f"You learned: {current_word['Finnish']} -> {current_word['English']}")
-    next_word()
+  print(f"You learned: {current_word['Finnish']} -> {current_word['English']}")
+  next_word()
 
 
 def next_word():
-    """Show the next word from to_learn or finish if empty."""
-    global current_word, flip_timer
+  """Show the next word from to_learn or finish if empty."""
+  global current_word, flip_timer
 
-    window.after_cancel(flip_timer)
+  window.after_cancel(flip_timer)
 
-    if not to_learn:
-        canvas.itemconfig(card_title, text="Done!", fill="black")
-        canvas.itemconfig(card_word, text="You learned all words 🎉", fill="black")
-        canvas.itemconfig(card_background, image=card_front_img)
-        return
-
-    current_word = random.choice(to_learn)
-    canvas.itemconfig(card_title, text="Finnish", fill="black")
-    canvas.itemconfig(card_word, text=current_word["Finnish"], fill="black")
+  if not to_learn:
+    canvas.itemconfig(card_title, text="Done!", fill="black")
+    canvas.itemconfig(card_word, text="You learned all words 🎉", fill="black")
     canvas.itemconfig(card_background, image=card_front_img)
+    return
 
-    flip_timer = window.after(3000, func=flip_card)
+  current_word = random.choice(to_learn)
+  canvas.itemconfig(card_title, text="Finnish", fill="black")
+  canvas.itemconfig(card_word, text=current_word["Finnish"], fill="black")
+  canvas.itemconfig(card_background, image=card_front_img)
+
+  flip_timer = window.after(3000, func=flip_card)
 
 
 def flip_card():
-    """Flip the card to show English translation."""
-    canvas.itemconfig(card_title, text="English", fill="white")
-    canvas.itemconfig(card_word, text=current_word["English"], fill="white")
-    canvas.itemconfig(card_background, image=card_back_img)
+  """Flip the card to show English translation."""
+  canvas.itemconfig(card_title, text="English", fill="white")
+  canvas.itemconfig(card_word, text=current_word["English"], fill="white")
+  canvas.itemconfig(card_background, image=card_back_img)
 
 
 
