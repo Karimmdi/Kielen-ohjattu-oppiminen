@@ -1,1 +1,7 @@
 .env
+.venv
+__pycache__
+
+languages/learned_words.csv
+languages/words_to_learn.csv
+languages/sentence_history.csv
