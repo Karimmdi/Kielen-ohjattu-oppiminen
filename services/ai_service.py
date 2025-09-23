@@ -1,4 +1,5 @@
-from urllib import response
+import threading
+import queue
 from google import genai
 from typing import Optional
 from models.word import Word, WordManager
@@ -10,19 +11,76 @@ SENTENCE_HISTORY_FILE = "languages/sentence_history.csv"
 
 class AIService:
   def __init__(self):
-    self.client = genai.Client(api_key=config.GEMINI_API_KEY)
+    # Try to initialize Gemini client
+    try:
+      if not config.GEMINI_API_KEY:
+        self.gemini_available = False
+        print("GEMINI_API_KEY not found in environment variables")
+        return
+      
+      self.client = genai.Client(api_key=config.GEMINI_API_KEY)
+      self.gemini_available = True
+      print("Gemini client initialized successfully")
+    except Exception as e:
+      self.gemini_available = False
+      print(f"Error initializing Gemini: {e}")
+      
+    # Initialize other components
     self.word_manager = WordManager()
+    self.sentence_queue = queue.Queue()
+    self.preload_min_sentences = config.PRELOAD_MIN_SENTENCES
+    self.sentence_interval = config.SENTENCE_INTERVAL
+    self.word_counter = 0
+    self.word_batch_size = config.WORD_BATCH_SIZE
+    
+    # Start background sentence generation
+    if self.gemini_available:
+        self._start_sentence_worker()
+        
+  def _start_sentence_worker(self):
+    """Start background thread for sentence generation."""
+    def sentence_worker():
+      while True:
+        try:
+          if self.sentence_queue.qsize() < self.preload_min_sentences:
+            sentence_word = self.generate_sentence()
+            if sentence_word:
+              sentence_word.is_sentence = True
+              self.sentence_queue.put(sentence_word)
+        except Exception as e:
+          print(f"Sentence generation failed: {e}")
+    
+    thread = threading.Thread(target=sentence_worker, daemon=True)
+    thread.start()
 
   def should_generate_sentence(self) -> bool:
-    return True
+    """Determine if it's time to show a generated sentence instead of a word."""
+    if not self.gemini_available:
+      return False
+    
+    print(f"Word counter: {self.word_counter}, Queue size: {self.sentence_queue.qsize()}")
+    self.word_counter += 1
+    return self.word_counter >= self.sentence_interval and not self.sentence_queue.empty()
+  
+  def get_sentence_if_available(self) -> Optional[Word]:
+    """Get a pregenerated sentence from queue."""
+    if not self.sentence_queue.empty():
+      self.word_counter = 0  # Reset counter
+      sentence = self.sentence_queue.get()
+      print(f"Retrieved sentence from queue: {sentence.finnish}")
+      return sentence
+    return None
 
   def generate_sentence(self) -> Optional[Word]:
-    words = self.word_manager.get_learned_words()
+    """Generate a simple Finnish sentence using recent words without repeating previous sentences."""
+    words = self.word_manager.get_learned_words(self.word_batch_size)
     if not words:
+      print("No learned words available for sentence generation")
       return None
 
     finnish_words = [word.finnish for word in words]
     word_list_str = ", ".join(finnish_words)
+    print(f"Using words for sentence: {word_list_str}")
 
     used_sentences = self._load_sentence_history()
 
@@ -48,10 +106,14 @@ class AIService:
       )
       text = response.text.strip()
       sentence = self._parse_response(text)
+      
       # Skip if empty or already used
       if not sentence or sentence.finnish in used_sentences:
+        print("Generated sentence was empty or duplicate")
         return None
+      
       self._save_sentence_history(sentence)
+      print(f"Generated new sentence: {sentence.finnish} -> {sentence.english}")
       return sentence
     except Exception as e:
       print(f"Error generating sentence: {e}")

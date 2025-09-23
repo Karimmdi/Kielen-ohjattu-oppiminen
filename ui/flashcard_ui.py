@@ -41,17 +41,101 @@ class FlashcardUI:
     if self.flip_timer:
       self.window.after_cancel(self.flip_timer)
     
-    self.canvas.itemconfig(self.card_title, text="Finnish", fill="black")
-    self.canvas.itemconfig(self.card_word, text=word.finnish, fill="black")
+    # Set title based on whether it's a sentence or word
+    if getattr(word, 'is_sentence', False):
+      self.canvas.itemconfig(self.card_title, text="Practice Sentence", fill="black")
+    else:
+      self.canvas.itemconfig(self.card_title, text="Finnish", fill="black")
+    
+    self._configure_card_text(word.finnish, "black")
     self.canvas.itemconfig(self.card_background, image=self.card_front_img)
     
     self.flip_timer = self.window.after(3000, self.flip_card)
   
   def flip_card(self):
     if self.current_word:
-      self.canvas.itemconfig(self.card_title, text="English", fill="white")
-      self.canvas.itemconfig(self.card_word, text=self.current_word.english, fill="white")
+      # Set title based on whether it's a sentence or word
+      if getattr(self.current_word, 'is_sentence', False):
+        self.canvas.itemconfig(self.card_title, text="Translation", fill="white")
+      else:
+        self.canvas.itemconfig(self.card_title, text="English", fill="white")
+      
+      self._configure_card_text(self.current_word.english, "white")
       self.canvas.itemconfig(self.card_background, image=self.card_back_img)
+      
+  def _configure_card_text(self, text, color):
+    """Configure card text with appropriate font size and wrapping."""
+    max_width = 650
+    font_family = "Arial"
+    
+    is_long_text = getattr(self.current_word, 'is_sentence', False) or len(text) > 25
+    
+    if is_long_text:
+      # Smaller font and line wrapping for sentences
+      font_size = 35
+      
+      # Simple text wrapping algorithm
+      words = text.split()
+      lines = []
+      current_line = ""
+      chars_per_line = max_width // (font_size * 0.55)
+      
+      for word in words:
+        test_line = current_line + (" " if current_line else "") + word
+        if len(test_line) > chars_per_line and current_line:
+          lines.append(current_line)
+          current_line = word
+        else:
+          current_line = test_line
+      
+      if current_line:
+        lines.append(current_line)
+      
+      # Adjust font size based on number of lines
+      if len(lines) > 5:
+        font_size = 25
+      elif len(lines) > 4:
+        font_size = 28
+      elif len(lines) > 3:
+        font_size = 32
+      
+      # Limit maximum lines to 6
+      if len(lines) > 6:
+        lines = lines[:6]
+        if not lines[-1].endswith("..."):
+          lines[-1] = lines[-1] + "..."
+      
+      wrapped_text = "\n".join(lines)
+      
+      # Move text up slightly if there are many lines
+      y_offset = 0
+      if len(lines) > 3:
+        y_offset = -10
+      elif len(lines) > 2:
+        y_offset = -5
+      
+      self.canvas.coords(self.card_word, 400, 263 + y_offset)
+      self.canvas.itemconfig(self.card_word, text=wrapped_text, fill=color,
+                             font=(font_family, font_size, "bold"))
+    else:
+      # Dynamic font size for simple words
+      text_length = len(text)
+      
+      if text_length > 20:
+        font_size = 35
+      elif text_length > 15:
+        font_size = 45
+      elif text_length > 12:
+        font_size = 50
+      elif text_length > 8:
+        font_size = 55
+      else:
+        font_size = 60
+      
+      # Reset position for single-line text
+      self.canvas.coords(self.card_word, 400, 263)
+      self.canvas.itemconfig(self.card_word, text=text, fill=color,
+                             font=(font_family, font_size, "bold"))
   
   def run(self):
     self.window.mainloop()

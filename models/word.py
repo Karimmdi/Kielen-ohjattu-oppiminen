@@ -7,6 +7,12 @@ import os
 class Word:
   finnish: str
   english: str
+  is_sentence: bool = False
+  
+  def __eq__(self, other):
+    if isinstance(other, Word):
+      return self.finnish == other.finnish and self.english == other.english
+    return False
 
 class WordManager:
   def __init__(self, data_dir: str = "languages"):
@@ -24,16 +30,22 @@ class WordManager:
     return [Word(row['Finnish'], row['English']) for _, row in df.iterrows()]
 
   def mark_word_as_learned(self, word: Word) -> None:
+    # Don't mark sentences as learned
+    if word.is_sentence:
+      return
+    
     # Remove from to_learn
-    df_to_learn = pd.read_csv(self.to_learn_file)
-    df_to_learn = df_to_learn[
-      ~((df_to_learn['Finnish'] == word.finnish) &
-        (df_to_learn['English'] == word.english))
-    ]
-    df_to_learn.to_csv(self.to_learn_file, index=False)
+    if os.path.exists(self.to_learn_file):
+      df_to_learn = pd.read_csv(self.to_learn_file)
+      df_to_learn = df_to_learn[
+        ~((df_to_learn['Finnish'] == word.finnish) &
+          (df_to_learn['English'] == word.english))
+      ]
+      df_to_learn.to_csv(self.to_learn_file, index=False)
 
     # Add to learned
-    new_word_df = pd.DataFrame([{'Finnish': word.finnish, 'English': word.english}])
+    clean_word = {"Finnish": word.finnish, "English": word.english}
+    new_word_df = pd.DataFrame([clean_word])
     if os.path.exists(self.learned_file):
       new_word_df.to_csv(self.learned_file, mode="a", header=False, index=False)
     else:
