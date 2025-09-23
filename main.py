@@ -1,10 +1,43 @@
 clean_words = []
+import random
+from models.word import WordManager, Word
+from ui.flashcard_ui import FlashcardUI
+from services.ai_service import AIService
 
-with open("./languages/finnish_words.txt", "r", encoding="utf-8") as file:
-    for line in file:
-        word =line.split()[0]
-        clean_words.append(word)
+class FlashcardApp:
+  def __init__(self):
+    self.word_manager = WordManager()
+    self.ai_service = AIService()
+    self.words_to_learn = self.word_manager.load_words_to_learn()
+    self.ui = FlashcardUI(self.mark_as_known, self.mark_as_unknown)
+  
+  def mark_as_known(self):
+    if not self.ui.current_word:
+      return
+    
+    self.word_manager.mark_word_as_learned(self.ui.current_word)
+    self.words_to_learn = [w for w in self.words_to_learn if w != self.ui.current_word]
+    
+    # Check if we should generate a sentence
+    if self.ai_service.should_generate_sentence():
+      sentence_word = self.ai_service.generate_sentence()
+      if sentence_word:
+        print(f"Generated: {sentence_word.finnish} -> {sentence_word.english}")
+    
+    self.next_word()
+    
+  def mark_as_unknown(self):
+    """When wrong button is pressed - just go to next word without learning"""
+    self.next_word()
+  
+  def next_word(self):
+    word = random.choice(self.words_to_learn)
+    self.ui.show_word(word)
+  
+  def run(self):
+    self.next_word()
+    self.ui.run()
 
-with open("./languages/finnish_words_clean.txt", "w", encoding="utf-8") as file:
-    for word in clean_words:
-        file.write(word + "\n")
+if __name__ == "__main__":
+  app = FlashcardApp()
+  app.run()
