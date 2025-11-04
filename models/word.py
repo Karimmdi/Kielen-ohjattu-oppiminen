@@ -8,7 +8,7 @@ class Word:
   finnish: str
   english: str
   is_sentence: bool = False
-  
+
   def __eq__(self, other):
     if isinstance(other, Word):
       return self.finnish == other.finnish and self.english == other.english
@@ -25,7 +25,11 @@ class WordManager:
     if os.path.exists(self.to_learn_file):
       df = pd.read_csv(self.to_learn_file)
     else:
+      # Fallback: copy master file to create words_to_learn.csv
       df = pd.read_csv(self.source_file)
+      # Create the words_to_learn.csv file for future use
+      df.to_csv(self.to_learn_file, index=False)
+      print(f"Created {self.to_learn_file} from master dataset")
 
     return [Word(row['Finnish'], row['English']) for _, row in df.iterrows()]
 
@@ -33,7 +37,7 @@ class WordManager:
     # Don't mark sentences as learned
     if word.is_sentence:
       return
-    
+
     # Remove from to_learn
     if os.path.exists(self.to_learn_file):
       df_to_learn = pd.read_csv(self.to_learn_file)

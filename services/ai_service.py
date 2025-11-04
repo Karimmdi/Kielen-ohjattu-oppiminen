@@ -17,14 +17,14 @@ class AIService:
         self.gemini_available = False
         print("GEMINI_API_KEY not found in environment variables")
         return
-      
+
       self.client = genai.Client(api_key=config.GEMINI_API_KEY)
       self.gemini_available = True
       print("Gemini client initialized successfully")
     except Exception as e:
       self.gemini_available = False
       print(f"Error initializing Gemini: {e}")
-      
+
     # Initialize other components
     self.word_manager = WordManager()
     self.sentence_queue = queue.Queue()
@@ -32,11 +32,11 @@ class AIService:
     self.sentence_interval = config.SENTENCE_INTERVAL
     self.word_counter = 0
     self.word_batch_size = config.WORD_BATCH_SIZE
-    
+
     # Start background sentence generation
     if self.gemini_available:
         self._start_sentence_worker()
-        
+
   def _start_sentence_worker(self):
     """Start background thread for sentence generation."""
     def sentence_worker():
@@ -49,7 +49,7 @@ class AIService:
               self.sentence_queue.put(sentence_word)
         except Exception as e:
           print(f"Sentence generation failed: {e}")
-    
+
     thread = threading.Thread(target=sentence_worker, daemon=True)
     thread.start()
 
@@ -57,11 +57,11 @@ class AIService:
     """Determine if it's time to show a generated sentence instead of a word."""
     if not self.gemini_available:
       return False
-    
+
     print(f"Word counter: {self.word_counter}, Queue size: {self.sentence_queue.qsize()}")
     self.word_counter += 1
     return self.word_counter >= self.sentence_interval and not self.sentence_queue.empty()
-  
+
   def get_sentence_if_available(self) -> Optional[Word]:
     """Get a pregenerated sentence from queue."""
     if not self.sentence_queue.empty():
@@ -85,7 +85,7 @@ class AIService:
     used_sentences = self._load_sentence_history()
 
     prompt = f"""
-    Create a simple Finnish sentence using only words from this list (choose multiple words if possible):
+    Create a simple Finnish sentence using only words from this list (choose multiple words if possible) and use the usual rules of Finnish grammar:
     "{word_list_str}"
     - Do not repeat sentences you have already generated.
     - Use at least 2-3 different words if possible.
@@ -106,12 +106,12 @@ class AIService:
       )
       text = response.text.strip()
       sentence = self._parse_response(text)
-      
+
       # Skip if empty or already used
       if not sentence or sentence.finnish in used_sentences:
         print("Generated sentence was empty or duplicate")
         return None
-      
+
       self._save_sentence_history(sentence)
       print(f"Generated new sentence: {sentence.finnish} -> {sentence.english}")
       return sentence
