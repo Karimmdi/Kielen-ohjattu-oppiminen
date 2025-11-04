@@ -17,5 +17,6 @@ class Config:
   PRELOAD_MIN_SENTENCES: int = 3
   SENTENCE_INTERVAL: int = 5
   WORD_BATCH_SIZE: int = 10
+  SYSTEM_INSCTRUCTIONS="You are a sentence generator and a translator. Your job is to generate accurate sentences that has both Finnish and English equivalents."
 
 config = Config()

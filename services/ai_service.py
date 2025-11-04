@@ -1,6 +1,7 @@
 import threading
 import queue
 from google import genai
+from google.genai import types
 from typing import Optional
 from models.word import Word, WordManager
 import os
@@ -102,7 +103,14 @@ class AIService:
         contents=[genai.types.Content(
           role="user",
           parts=[genai.types.Part(text=prompt)]
-        )]
+        )],
+        config=types.GenerateContentConfig(
+          temperature=0.1,
+          top_p=1.0,
+          top_k=1,
+          thinking_config=types.ThinkingConfig(thinking_budget=-1), # Dynamic thinking
+          system_instruction=config.SYSTEM_INSCTRUCTIONS
+        ),
       )
       text = response.text.strip()
       sentence = self._parse_response(text)
