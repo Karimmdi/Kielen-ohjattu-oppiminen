@@ -1,22 +1,31 @@
 from tkinter import *
 from typing import Callable, Optional
 from models.word import Word
+from config.settings import config
 
 class FlashcardUI:
-  def __init__(self, on_known: Callable, on_unknown: Callable):
+  def __init__(self, master: Frame, on_known: Callable, on_unknown: Callable, on_back: Callable):
     self.on_known = on_known
     self.on_unknown = on_unknown
+    self.on_back = on_back
     self.current_word: Optional[Word] = None
     self.flip_timer = None
-    self._setup_ui()
-  
-  def _setup_ui(self):
-    self.window = Tk()
-    self.window.title("Learn new languages with Flashcards")
-    self.window.config(padx=50, pady=50, bg="#B1DDC6")
     
+    self.root = master.winfo_toplevel()
+    self.frame = Frame(master, bg=config.BACKGROUND_COLOR)
+    self.canvas = None
+    self.card_front_img = None
+    self.card_back_img = None
+    self.check_image = None
+    self.cross_image = None
+    self.card_background = None
+    self.card_title = None
+    self.card_word = None
+    self._build()
+  
+  def _build(self):
     # Canvas setup
-    self.canvas = Canvas(width=800, height=526, bg="#B1DDC6", highlightthickness=0)
+    self.canvas = Canvas(self.frame, width=800, height=526, bg=config.BACKGROUND_COLOR, highlightthickness=0)
     self.card_front_img = PhotoImage(file="images/card_front.png")
     self.card_back_img = PhotoImage(file="images/card_back.png")
     
@@ -30,16 +39,23 @@ class FlashcardUI:
     self.cross_image = PhotoImage(file="images/wrong.png")
     
     # Buttons
-    self.known_button = Button(image=self.check_image, highlightthickness=0, command=self.on_known)
+    self.known_button = Button(self.frame, image=self.check_image, highlightthickness=0, command=self.on_known)
     self.known_button.grid(row=1, column=0)
     
-    self.unknown_button = Button(image=self.cross_image, highlightthickness=0, command=self.on_unknown)
+    self.unknown_button = Button(self.frame, image=self.cross_image, highlightthickness=0, command=self.on_unknown)
     self.unknown_button.grid(row=1, column=1)
+    
+  def _on_back_pressed(self):
+  # Cancel pending flip to avoid callbacks after navigation
+    if self.flip_timer:
+      self.root.after_cancel(self.flip_timer)
+      self.flip_timer = None
+    self.on_back()
   
   def show_word(self, word: Word):
     self.current_word = word
     if self.flip_timer:
-      self.window.after_cancel(self.flip_timer)
+      self.root.after_cancel(self.flip_timer)
     
     # Set title based on whether it's a sentence or word
     if getattr(word, 'is_sentence', False):
@@ -50,7 +66,7 @@ class FlashcardUI:
     self._configure_card_text(word.finnish, "black")
     self.canvas.itemconfig(self.card_background, image=self.card_front_img)
     
-    self.flip_timer = self.window.after(3000, self.flip_card)
+    self.flip_timer = self.root.after(3000, self.flip_card)
   
   def flip_card(self):
     if self.current_word:
@@ -137,5 +153,9 @@ class FlashcardUI:
       self.canvas.itemconfig(self.card_word, text=text, fill=color,
                              font=(font_family, font_size, "bold"))
   
-  def run(self):
-    self.window.mainloop()
+  # Screen control
+  def show(self):
+    self.frame.grid(row=0, column=0, sticky="nsew")
+
+  def hide(self):
+    self.frame.grid_remove()

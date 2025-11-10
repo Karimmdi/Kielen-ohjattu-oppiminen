@@ -6,7 +6,11 @@ load_dotenv()
 
 @dataclass
 class Config:
+  # UI Confihuration
+  APP_WIDTH = 800
+  APP_HEIGHT = 636
   BACKGROUND_COLOR: str = "#B1DDC6"
+  
   CARD_FLIP_DELAY: int = 3000
   DATA_DIR: str = "languages"
   IMAGES_DIR: str = "images"
